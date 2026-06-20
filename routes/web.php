@@ -2,10 +2,15 @@
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\BookingController;
+use App\Http\Middleware\EnsureUserBelongsToTenant;
+use App\Http\Middleware\TenantMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::domain('{tenant}.localhost')
-    ->middleware([\App\Http\Middleware\TenantMiddleware::class])
+    ->middleware([
+        TenantMiddleware::class,
+        EnsureUserBelongsToTenant::class,
+    ])
     ->group(function () {
         Route::get('/', [BookingController::class, 'landing'])->name('tenant.landing');
         Route::get('/book', [BookingController::class, 'index'])->name('tenant.booking');

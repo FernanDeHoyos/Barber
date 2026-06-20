@@ -10,8 +10,46 @@ class BookingController extends Controller
 {
     public function landing()
     {
+        $tenant = app('tenant');
+
+        $barbers = $tenant->barbers()
+            ->with('services')
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($barber) {
+                return [
+                    'id' => $barber->id,
+                    'name' => $barber->name,
+                    'bio' => $barber->bio,
+                    'photo_url' => $barber->photo_path ? (str_starts_with($barber->photo_path, 'http') ? $barber->photo_path : \Illuminate\Support\Facades\Storage::url($barber->photo_path)) : null,
+                    'services' => $barber->services->pluck('name'),
+                ];
+            });
+
+        $services = $tenant->services()
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($service) {
+                return [
+                    'id' => $service->id,
+                    'name' => $service->name,
+                    'description' => $service->description,
+                    'price' => number_format($service->price, 2),
+                    'duration_minutes' => $service->duration_minutes,
+                ];
+            });
+
+        $tenantData = [
+            'id' => $tenant->id,
+            'name' => $tenant->name,
+            'logo_url' => $tenant->logo_path ? (str_starts_with($tenant->logo_path, 'http') ? $tenant->logo_path : \Illuminate\Support\Facades\Storage::url($tenant->logo_path)) : null,
+            'primary_color' => $tenant->primary_color ?? '#f59e0b',
+        ];
+
         return Inertia::render('Tenant/Landing', [
-            'tenant' => app('tenant'),
+            'tenant' => $tenantData,
+            'barbers' => $barbers,
+            'services' => $services,
         ]);
     }
 

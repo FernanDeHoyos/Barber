@@ -17,6 +17,8 @@ class Tenant extends Model
         'contact_email',
         'phone',
         'address',
+        'opening_time',
+        'closing_time',
         'is_active',
         'plan',
     ];

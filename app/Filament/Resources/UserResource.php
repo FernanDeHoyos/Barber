@@ -89,4 +89,9 @@ class UserResource extends Resource
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
 }

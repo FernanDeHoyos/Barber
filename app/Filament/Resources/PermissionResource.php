@@ -60,4 +60,9 @@ class PermissionResource extends Resource
             'edit' => Pages\EditPermission::route('/{record}/edit'),
         ];
     }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
 }

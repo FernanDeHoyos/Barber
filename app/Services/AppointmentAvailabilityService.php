@@ -7,7 +7,7 @@ use Carbon\Carbon;
 
 class AppointmentAvailabilityService
 {
-    public static function getAvailableSlots(Barber $barber, string $date, int $durationMinutes, int $intervalMinutes = 15): array
+    public static function getAvailableSlots(Barber $barber, string $date, int $durationMinutes, int $intervalMinutes = 10): array
     {
         $targetDate = Carbon::parse($date);
         $dayOfWeek = $targetDate->dayOfWeek;

@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class TenantResource extends Resource
 {
@@ -37,6 +38,50 @@ class TenantResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
+    public static function canCreate(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        $user = auth()->user();
+
+        if ($user->role === 'superadmin') {
+            return true;
+        }
+
+        return $record->id === $user->tenant_id;
+    }
+
+    public static function canDelete($record): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = auth()->user();
+
+        if ($user->role === 'superadmin') {
+            return $query;
+        }
+
+        return $query->where('id', $user->tenant_id);
     }
 
     public static function getPages(): array

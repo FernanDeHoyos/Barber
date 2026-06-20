@@ -36,4 +36,9 @@ class AdminLogResource extends Resource
             'index' => Pages\ListAdminLogs::route('/'),
         ];
     }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()?->isSuperAdmin() ?? false;
+    }
 }

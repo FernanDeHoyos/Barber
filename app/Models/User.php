@@ -3,14 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Filament\Models\Contracts\HasTenants;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use App\Models\Permission;
-use App\Models\Role;
-use App\Models\Tenant;
+use Illuminate\Database\Eloquent\Model; // <-- IMPORTANTE
+use Illuminate\Foundation\Auth\User as Authenticatable;                       // <-- IMPORTANTE
+use Illuminate\Notifications\Notifiable;   // <-- IMPORTANTE
+use Illuminate\Support\Collection;        // <-- IMPORTANTE
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasTenants // <-- IMPLEMENTAR LA INTERFAZ
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -37,6 +38,43 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    // =========================================================================
+    // MÉTODOS REQUERIDOS POR FILAMENT (HAS TENANTS)
+    // =========================================================================
+
+    /**
+     * Devuelve las barberías a las que este usuario tiene acceso para el menú desplegable.
+     */
+    public function getTenants(Panel $panel): Collection
+    {
+        // Si es superadmin, le cargamos TODAS las barberías existentes en el sistema
+        if ($this->isSuperAdmin()) {
+            return Tenant::all();
+        }
+
+        // Si es un admin común, solo le devolvemos la barbería que tiene asignada en su 'tenant_id'
+        // Lo envolvemos en una colección porque Filament espera un grupo de registros
+        return collect(filter_var($this->tenant, FILTER_DEFAULT) ? [$this->tenant] : []);
+    }
+
+    /**
+     * Controla la seguridad a nivel de URL si intentan forzar el acceso a un Tenant.
+     */
+    public function canAccessTenant(Model $tenant): bool
+    {
+        // El superadmin puede saltar a cualquier barbería por URL sin restricciones
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        // El admin común solo puede acceder si el ID de la barbería coincide con su 'tenant_id'
+        return $this->tenant_id === $tenant->id;
+    }
+
+    // =========================================================================
+    // RELACIONES Y LÓGICA EXISTENTE (SIN CAMBIOS)
+    // =========================================================================
 
     public function tenant()
     {
@@ -95,6 +133,21 @@ class User extends Authenticatable
         }
 
         return $this;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isBarber(): bool
+    {
+        return $this->role === 'barber';
     }
 
     public function canAccessFilament(): bool
