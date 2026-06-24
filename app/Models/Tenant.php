@@ -21,6 +21,10 @@ class Tenant extends Model
         'closing_time',
         'is_active',
         'plan',
+        'hero_image_path',
+        'hero_headline',
+        'google_maps_url',
+        'gallery_paths',
     ];
 
 
@@ -46,9 +50,24 @@ class Tenant extends Model
         return $this->hasMany(Service::class);
     }
 
+    public function blockedTimes()
+    {
+        return $this->hasMany(BlockedTime::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(TenantInvoice::class);
+    }
+
     public function appointments()
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
     }
 
     // Helpers
@@ -61,6 +80,7 @@ class Tenant extends Model
     'is_active' => 'boolean',
     'opening_time' => 'datetime:H:i',
     'closing_time' => 'datetime:H:i',
+    'gallery_paths' => 'array',
 ];
 
 }

@@ -42,8 +42,15 @@ class BookingController extends Controller
         $tenantData = [
             'id' => $tenant->id,
             'name' => $tenant->name,
+            'address' => $tenant->address,
             'logo_url' => $tenant->logo_path ? (str_starts_with($tenant->logo_path, 'http') ? $tenant->logo_path : \Illuminate\Support\Facades\Storage::url($tenant->logo_path)) : null,
             'primary_color' => $tenant->primary_color ?? '#f59e0b',
+            'secondary_color' => $tenant->secondary_color ?? '#d4af37',
+            'accent_color' => $tenant->accent_color ?? '#1a1a1f',
+            'hero_image_url' => $tenant->hero_image_path ? (str_starts_with($tenant->hero_image_path, 'http') ? $tenant->hero_image_path : \Illuminate\Support\Facades\Storage::url($tenant->hero_image_path)) : null,
+            'hero_headline' => $tenant->hero_headline,
+            'google_maps_url' => $tenant->google_maps_url,
+            'gallery_urls' => $tenant->gallery_paths ? array_map(fn($path) => str_starts_with($path, 'http') ? $path : \Illuminate\Support\Facades\Storage::url($path), $tenant->gallery_paths) : [],
         ];
 
         return Inertia::render('Tenant/Landing', [

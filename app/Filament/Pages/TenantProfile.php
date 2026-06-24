@@ -30,8 +30,7 @@ class TenantProfile extends Page implements HasForms
 
     public function mount(): void
     {
-        $tenantId = app()->bound('tenant') && app('tenant') ? app('tenant')->id : auth()->user()?->tenant_id;
-        $tenant = $tenantId ? \App\Models\Tenant::find($tenantId) : \App\Models\Tenant::first();
+        $tenant = \Filament\Facades\Filament::getTenant() ?? \App\Models\Tenant::find(auth()->user()?->tenant_id);
         
         if ($tenant) {
             $this->form->fill($tenant->toArray());
@@ -42,6 +41,35 @@ class TenantProfile extends Page implements HasForms
     {
         return $schema
             ->schema([
+                Section::make('Portada y Bienvenida')
+                    ->schema([
+                        FileUpload::make('hero_image_path')
+                            ->label('Foto de Portada')
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->saveUploadedFileUsing(function (\Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file): string {
+                                $response = \Illuminate\Support\Facades\Http::asForm()->post('https://freeimage.host/api/1/upload', [
+                                    'key' => '6d207e02198a847aa98d0a2a901485a5',
+                                    'action' => 'upload',
+                                    'source' => base64_encode(file_get_contents($file->getRealPath())),
+                                    'format' => 'json',
+                                ]);
+                                return $response->json('image.url') ?? '';
+                            })
+                            ->fetchFileInformation(false)
+                            ->getUploadedFileUsing(function (string $file): ?array {
+                                return [
+                                    'name' => basename($file),
+                                    'size' => 0,
+                                    'type' => null,
+                                    'url' => str_starts_with($file, 'http') ? $file : \Illuminate\Support\Facades\Storage::url($file),
+                                ];
+                            })
+                            ->columnSpanFull(),
+                        TextInput::make('hero_headline')
+                            ->label('Título de Bienvenida')
+                            ->placeholder('Ej. Cortes clásicos con un toque moderno')
+                            ->columnSpanFull(),
+                    ])->columns(2),
                 Section::make('Información General')
                     ->schema([
                         TextInput::make('name')
@@ -55,6 +83,10 @@ class TenantProfile extends Page implements HasForms
                             ->tel(),
                         Textarea::make('address')
                             ->label('Dirección')
+                            ->columnSpanFull(),
+                        TextInput::make('google_maps_url')
+                            ->label('URL o iframe de Google Maps')
+                            ->placeholder('https://goo.gl/maps/... o <iframe src="...">')
                             ->columnSpanFull(),
                         \Filament\Forms\Components\TimePicker::make('opening_time')
                             ->label('Hora de Apertura')
@@ -77,6 +109,15 @@ class TenantProfile extends Page implements HasForms
                                 ]);
                                 return $response->json('image.url') ?? '';
                             })
+                            ->fetchFileInformation(false)
+                            ->getUploadedFileUsing(function (string $file): ?array {
+                                return [
+                                    'name' => basename($file),
+                                    'size' => 0,
+                                    'type' => null,
+                                    'url' => str_starts_with($file, 'http') ? $file : \Illuminate\Support\Facades\Storage::url($file),
+                                ];
+                            })
                             ->columnSpanFull(),
                         ColorPicker::make('primary_color')
                             ->label('Color Primario'),
@@ -85,6 +126,32 @@ class TenantProfile extends Page implements HasForms
                         ColorPicker::make('accent_color')
                             ->label('Color Acento'),
                     ])->columns(3),
+                Section::make('Galería del Local')
+                    ->schema([
+                        FileUpload::make('gallery_paths')
+                            ->label('Fotos de la barbería')
+                            ->multiple()
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->saveUploadedFileUsing(function (\Livewire\Features\SupportFileUploads\TemporaryUploadedFile $file): string {
+                                $response = \Illuminate\Support\Facades\Http::asForm()->post('https://freeimage.host/api/1/upload', [
+                                    'key' => '6d207e02198a847aa98d0a2a901485a5',
+                                    'action' => 'upload',
+                                    'source' => base64_encode(file_get_contents($file->getRealPath())),
+                                    'format' => 'json',
+                                ]);
+                                return $response->json('image.url') ?? '';
+                            })
+                            ->fetchFileInformation(false)
+                            ->getUploadedFileUsing(function (string $file): ?array {
+                                return [
+                                    'name' => basename($file),
+                                    'size' => 0,
+                                    'type' => null,
+                                    'url' => str_starts_with($file, 'http') ? $file : \Illuminate\Support\Facades\Storage::url($file),
+                                ];
+                            })
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -93,16 +160,10 @@ class TenantProfile extends Page implements HasForms
     {
         try {
             $data = $this->form->getState();
-            $tenantId = app()->bound('tenant') && app('tenant') ? app('tenant')->id : auth()->user()?->tenant_id;
-            $tenant = $tenantId ? \App\Models\Tenant::find($tenantId) : \App\Models\Tenant::first();
+            $tenant = \Filament\Facades\Filament::getTenant() ?? \App\Models\Tenant::find(auth()->user()?->tenant_id);
             
             if ($tenant) {
                 $tenant->update($data);
-                
-                // Self-heal: asignarle el tenant al usuario si estaba huérfano
-                if (auth()->user() && !auth()->user()->tenant_id) {
-                    auth()->user()->update(['tenant_id' => $tenant->id]);
-                }
             }
 
             Notification::make()

@@ -10,6 +10,20 @@ class AppointmentAvailabilityService
     public static function getAvailableSlots(Barber $barber, string $date, int $durationMinutes, int $intervalMinutes = 10): array
     {
         $targetDate = Carbon::parse($date);
+        
+        // --- BLOCKED TIMES LOGIC ---
+        $blockedTimes = \App\Models\BlockedTime::where('tenant_id', $barber->tenant_id)
+            ->whereDate('date', $targetDate)
+            ->where(function($q) use ($barber) {
+                $q->whereNull('barber_id')->orWhere('barber_id', $barber->id);
+            })
+            ->get();
+            
+        // Si hay algún bloqueo de día completo, retornamos vacío
+        if ($blockedTimes->contains(fn ($bt) => is_null($bt->start_time) && is_null($bt->end_time))) {
+            return [];
+        }
+
         $dayOfWeek = $targetDate->dayOfWeek;
 
         $workingHour = $barber->workingHours()
@@ -38,6 +52,16 @@ class AppointmentAvailabilityService
                 ];
             });
 
+        // Convertir bloqueos parciales en "citas" para evitar conflictos
+        foreach ($blockedTimes as $bt) {
+            if ($bt->start_time && $bt->end_time) {
+                $appointments->push([
+                    'start' => Carbon::parse($bt->start_time),
+                    'end' => Carbon::parse($bt->end_time),
+                ]);
+            }
+        }
+
         $slots = [];
 
         for ($slot = $start->copy(); $slot->lte($end); $slot->addMinutes($intervalMinutes)) {
@@ -46,9 +70,10 @@ class AppointmentAvailabilityService
                 return $slot->lt($appointment['end']) && $slotEnd->gt($appointment['start']);
             });
 
-            if (! $conflict) {
-                $slots[] = $slot->format('H:i');
-            }
+            $slots[] = [
+                'time' => $slot->format('H:i'),
+                'available' => ! $conflict,
+            ];
         }
 
         return $slots;

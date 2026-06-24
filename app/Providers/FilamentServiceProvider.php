@@ -42,6 +42,10 @@ class FilamentServiceProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+            ->discoverWidgets(
+                in: app_path('Filament/Widgets'),
+                for: 'App\\Filament\\Widgets'
+            )
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
@@ -57,7 +61,7 @@ class FilamentServiceProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-                EnsureUserBelongsToTenant::class,
-            ]);
+            ])
+            ->tenant(\App\Models\Tenant::class, slugAttribute: 'slug');
     }
 }

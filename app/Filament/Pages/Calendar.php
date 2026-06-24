@@ -14,7 +14,7 @@ class Calendar extends Page
 
     protected function getViewData(): array
     {
-        $tenantId = app()->bound('tenant') && app('tenant') ? app('tenant')->id : auth()->user()?->tenant_id;
+        $tenantId = \Filament\Facades\Filament::getTenant()?->id ?? auth()->user()?->tenant_id;
         
         $events = [];
         if ($tenantId) {

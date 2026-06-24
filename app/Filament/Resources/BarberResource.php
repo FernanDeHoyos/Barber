@@ -54,6 +54,15 @@ class BarberResource extends Resource
                     ]);
                     return $response->json('image.url') ?? '';
                 })
+                ->fetchFileInformation(false)
+                ->getUploadedFileUsing(function (string $file): ?array {
+                    return [
+                        'name' => basename($file),
+                        'size' => 0,
+                        'type' => null,
+                        'url' => str_starts_with($file, 'http') ? $file : \Illuminate\Support\Facades\Storage::url($file),
+                    ];
+                })
                 ->columnSpanFull(),
 
             Textarea::make('bio')

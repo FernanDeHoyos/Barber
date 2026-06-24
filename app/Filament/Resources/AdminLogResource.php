@@ -15,8 +15,10 @@ class AdminLogResource extends Resource
 {
     protected static ?string $model = AdminLog::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
-    protected static string|UnitEnum|null $navigationGroup = 'Administración';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
+    protected static string|\UnitEnum|null $navigationGroup = 'Auditoría';
+
+    protected static bool $isScopedToTenant = false;
 
     public static function table(Table $table): Table
     {

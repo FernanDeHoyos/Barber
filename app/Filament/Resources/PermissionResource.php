@@ -22,6 +22,8 @@ class PermissionResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-key';
     protected static string|UnitEnum|null $navigationGroup = 'Administración';
 
+    protected static bool $isScopedToTenant = false;
+
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
